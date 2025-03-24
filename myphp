@@ -1,7 +1,19 @@
 #!/usr/bin/env bash
 
-PHP_BIN="/home/linuxbrew/.linuxbrew/bin/php"
-PECL_BIN="/home/linuxbrew/.linuxbrew/bin/pecl"
+BINS=(
+  pear
+  peardev
+  pecl
+  phar
+  phar.phar
+  php
+  php-cgi
+  php-config
+  phpdbg
+  phpize
+)
+GLOBAL_BIN="/usr/bin"
+HOMEBREW_BIN="/home/linuxbrew/.linuxbrew/bin"
 
 usage() {
   echo "Usage: myphp.sh <command> [version]"
@@ -28,6 +40,7 @@ install_php() {
 use_php() {
   # User input version that is only major.minor Eg: 8.2
   local mm_version=$1
+  local opt=$2
   if [ -z "$mm_version" ]; then
     echo "Error: Missing PHP version."
     exit 1
@@ -47,19 +60,22 @@ use_php() {
     exit 1
   fi
 
-  local new_php_path="$HOMEBREW_CELLAR/$mm_version/$verbose_version/bin/php"
-  local new_pecl_path="$HOMEBREW_CELLAR/$mm_version/$verbose_version/bin/pecl"
+  local new_php_path="$HOMEBREW_CELLAR/$mm_version/$verbose_version/bin"
 
-  if [ ! -f "$new_php_path" ] || [ ! -f "$new_pecl_path" ]; then
+  if [ ! -d "$new_php_path" ]; then
     echo "Error: PHP version $mm_version is not installed."
     echo "PHP: $new_php_path"
-    echo "PHP: $new_pecl_path"
     exit 1
   fi
 
   echo "Switching to PHP $mm_version..."
-  ln -sf "$new_php_path" "$PHP_BIN"
-  ln -sf "$new_pecl_path" "$PECL_BIN"
+  for bin in "${BINS[@]}"; do
+    ln -sf "$new_php_path/$bin" "$HOMEBREW_BIN/$bin"
+    if [[ "$opt" == "global" ]]; then
+      sudo ln -sf "$new_php_path/$bin" "$GLOBAL_BIN/$bin"
+    fi
+  done
+
   echo "PHP is now set to version $mm_version."
 }
 
@@ -75,13 +91,14 @@ fi
 
 COMMAND=$1
 VERSION=$2
+OPT=$3
 
 case "$COMMAND" in
 install)
   install_php "$VERSION"
   ;;
 use)
-  use_php "$VERSION"
+  use_php "$VERSION" "$OPT"
   ;;
 list)
   list_php
