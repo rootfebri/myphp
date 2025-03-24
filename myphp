@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+
+PHP_BIN="/home/linuxbrew/.linuxbrew/bin/php"
+PECL_BIN="/home/linuxbrew/.linuxbrew/bin/pecl"
+
+usage() {
+  echo "Usage: myphp.sh <command> [version]"
+  echo "Commands:"
+  echo "  install <version>  - Install PHP version using Homebrew"
+  echo "  use <version>      - Switch to a specific PHP version"
+  echo "  list              - List installed PHP versions"
+  exit 1
+}
+
+install_php() {
+  local version=$1
+  if [ -z "$version" ]; then
+    echo "Error: Missing PHP version."
+    exit 1
+  fi
+  if [ "$version" != "php" ]; then
+    version="php@$version"
+  fi
+  echo "Installing PHP $version..."
+  brew install "$version"
+}
+
+use_php() {
+  # User input version that is only major.minor Eg: 8.2
+  local mm_version=$1
+  if [ -z "$mm_version" ]; then
+    echo "Error: Missing PHP version."
+    exit 1
+  fi
+
+  # Extract the exact installed PHP version from brew list output
+  local verbose_version
+  if [[ "$mm_version" == "latest" ]]; then
+    mm_version="php"
+  else
+    mm_version="php@$mm_version"
+  fi
+
+  verbose_version=$(brew list "$mm_version" --versions | awk '{print $2}')
+  if [ -z "$verbose_version" ]; then
+    echo "Error: Could not determine the exact installed version for PHP $mm_version."
+    exit 1
+  fi
+
+  local new_php_path="$HOMEBREW_CELLAR/$mm_version/$verbose_version/bin/php"
+  local new_pecl_path="$HOMEBREW_CELLAR/$mm_version/$verbose_version/bin/pecl"
+
+  if [ ! -f "$new_php_path" ] || [ ! -f "$new_pecl_path" ]; then
+    echo "Error: PHP version $mm_version is not installed."
+    echo "PHP: $new_php_path"
+    echo "PHP: $new_pecl_path"
+    exit 1
+  fi
+
+  echo "Switching to PHP $mm_version..."
+  ln -sf "$new_php_path" "$PHP_BIN"
+  ln -sf "$new_pecl_path" "$PECL_BIN"
+  echo "PHP is now set to version $mm_version."
+}
+
+list_php() {
+  local lists
+  echo "Installed PHP versions:"
+  brew leaves | xargs brew desc --eval-all | grep php
+}
+
+if [ $# -lt 1 ]; then
+  usage
+fi
+
+COMMAND=$1
+VERSION=$2
+
+case "$COMMAND" in
+install)
+  install_php "$VERSION"
+  ;;
+use)
+  use_php "$VERSION"
+  ;;
+list)
+  list_php
+  ;;
+*)
+  usage
+  ;;
+esac
