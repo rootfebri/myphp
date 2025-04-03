@@ -16,12 +16,19 @@ GLOBAL_BIN="/usr/bin"
 HOMEBREW_BIN="/home/linuxbrew/.linuxbrew/bin"
 
 usage() {
-  echo "Usage: myphp.sh <command> [version]"
-  echo "Commands:"
-  echo "  install <version>  - Install PHP version using Homebrew"
-  echo "  use <version>      - Switch to a specific PHP version"
-  echo "  list              - List installed PHP versions"
-  exit 1
+  local script_name
+
+  script_name="$(basename "$0")"
+  if ! command -v "$script_name"; then
+    script_name="$0"
+  fi
+
+  echo -e "Usage: $script_name <command> [version]"
+  echo -e "Commands:"
+  echo -e "\tinstall <version>\t- Install PHP version using Homebrew"
+  echo -e "\tuse <version>\t\t- Switch to a specific PHP version"
+  echo -e "\tlist\t\t\t- List installed PHP versions"
+  exit 0
 }
 
 install_php() {
